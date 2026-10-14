@@ -1,0 +1,16 @@
+{
+  "name": "頭痛日誌",
+  "short_name": "頭痛日誌",
+  "description": "記錄頭痛、用藥與當時天氣",
+  "lang": "zh-Hant-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F4F8",
+  "theme_color": "#5E47A8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
