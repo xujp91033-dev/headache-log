@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>頭痛日誌</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#5E47A8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="頭痛日誌">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: 單欄卡片式日誌，上方分頁（記錄／歷史／匯出），手機優先 */
+:root{
+  --bg:#F2F4F8; --surface:#FFFFFF; --ink:#1E2633; --muted:#5D6A7C; --line:#DCE1EA;
+  --accent:#5E47A8; --accent-ink:#FFFFFF; --accent-soft:#ECE7F8;
+  --region:#E1E5EE; --region-hover:#C9D0DE; --head-line:#9AA5B6;
+  --p1:#5FA493; --p2:#D9A93A; --p3:#D46D42; --p4:#B53447;
+  --ok:#2F8A5B; --warn:#B5462F;
+  --f-display:"LXGW WenKai TC","Noto Sans TC",serif;
+  --f-body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161D; --surface:#1A2029; --ink:#E6EAF0; --muted:#9AA6B6; --line:#2B3340;
+  --accent:#A08BE6; --accent-ink:#15121F; --accent-soft:#2A2440;
+  --region:#2B3340; --region-hover:#3A4453; --head-line:#5E6A7C;
+  --p1:#6FBBA8; --p2:#E2B957; --p3:#E2845C; --p4:#E0596B; --ok:#5CC08C; --warn:#E57A62;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161D; --surface:#1A2029; --ink:#E6EAF0; --muted:#9AA6B6; --line:#2B3340;
+  --accent:#A08BE6; --accent-ink:#15121F; --accent-soft:#2A2440;
+  --region:#2B3340; --region-hover:#3A4453; --head-line:#5E6A7C;
+  --p1:#6FBBA8; --p2:#E2B957; --p3:#E2845C; --p4:#E0596B; --ok:#5CC08C; --warn:#E57A62;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 60px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:30px;letter-spacing:.04em}
+h2{font-size:20px}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tabs button{border:0;background:none;color:var(--muted);font:500 14px var(--f-body);padding:7px 16px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:22px}
+.field{display:grid;gap:8px;min-width:0}
+.label{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.row>.field{flex:1 1 200px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.rg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--f-body);padding:8px 14px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700;padding:11px 22px}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--warn)}
+.btn.danger.armed{background:var(--warn);color:#fff;border-color:var(--warn)}
+
+/* 頭部圖 */
+.heads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.head-card{display:grid;gap:4px;justify-items:center;background:var(--bg);border-radius:12px;padding:10px 6px}
+.head-card svg{width:100%;max-width:200px;height:auto;display:block}
+.head-card .cap{font-size:12px;color:var(--muted)}
+.rg{fill:var(--region);stroke:var(--surface);stroke-width:1.6;cursor:pointer;transition:fill .12s}
+.rg:hover{fill:var(--region-hover)}
+.rg[aria-pressed="true"]{fill:var(--accent)}
+.outline{fill:none;stroke:var(--head-line);stroke-width:1.6;pointer-events:none}
+.deco{fill:var(--region);stroke:var(--head-line);stroke-width:1.2}
+.side{font:12px var(--f-body);fill:var(--muted)}
+.hover-name{font-size:13px;color:var(--muted);min-height:1.6em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:14px var(--f-body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:500}
+.chip.tag{cursor:default;background:var(--accent-soft);border-color:transparent;font-size:13px;padding:3px 10px}
+.chip.tag button{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 0 0 4px;font-size:14px}
+
+/* 強度 */
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.scale button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 15px var(--f-body);padding:9px 0;border-radius:8px;cursor:pointer;font-variant-numeric:tabular-nums}
+.scale button[aria-pressed="true"]{color:#fff;border-color:transparent}
+.scale-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+/* 用藥 */
+.meds{display:grid;gap:8px}
+.med{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+@media (max-width:560px){.med{grid-template-columns:1fr 1fr;padding:10px;border:1px dashed var(--line);border-radius:10px}.med .btn{grid-column:span 2}}
+
+/* 天氣 */
+.wx{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.wx div{background:var(--bg);padding:10px 12px}
+.wx b{display:block;font:700 18px var(--f-body);font-variant-numeric:tabular-nums}
+.wx span{font-size:12px;color:var(--muted)}
+.wx-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.wx-status{font-size:13px;color:var(--muted)}
+.down{color:var(--warn)} .up{color:var(--ok)}
+
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* 歷史 */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.stat b{display:block;font:700 22px var(--f-body);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat span{font-size:12px;color:var(--muted)}
+.insight{font-size:14px;color:var(--muted);margin:10px 2px 16px}
+.list{display:grid;gap:10px}
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px}
+.badge{grid-row:span 5;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 18px var(--f-body);font-variant-numeric:tabular-nums}
+.entry .when{font-weight:700}
+.entry .line{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.entry .line strong{color:var(--ink);font-weight:500}
+.entry .ops{display:flex;gap:6px;margin-top:6px}
+.empty{text-align:center;color:var(--muted);padding:40px 16px;border:1px dashed var(--line);border-radius:14px;background:var(--surface)}
+.empty h3{color:var(--ink);margin-bottom:6px}
+
+.sync-pill{display:inline-flex;align-items:center;gap:6px;margin-top:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:12px var(--f-body);padding:3px 10px;border-radius:999px;cursor:pointer}
+.sync-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync-pill[data-state="ok"] .dot{background:var(--ok)}
+.sync-pill[data-state="busy"] .dot{background:var(--p2)}
+.sync-pill[data-state="err"] .dot{background:var(--warn)}
+.toggle{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border-radius:10px;padding:10px 12px;cursor:pointer}
+.toggle input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.steps{margin:0;padding-left:20px;font-size:14px;color:var(--muted);display:grid;gap:4px}
+.steps code{font-size:13px;background:var(--bg);padding:1px 5px;border-radius:5px;color:var(--ink)}
+.geo-results{display:flex;flex-wrap:wrap;gap:6px}
+.note{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>頭痛日誌</h1>
+      <div class="sub">記下每次頭痛、吃了什麼藥，天氣和氣壓自動帶入</div>
+      <button type="button" class="sync-pill" id="sync-pill"><span class="dot"></span><span id="sync-text">只存在這台裝置</span></button>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-log" aria-selected="true" data-tab="log">記錄</button>
+      <button role="tab" id="tab-hist" aria-selected="false" data-tab="hist">歷史</button>
+      <button role="tab" id="tab-exp" aria-selected="false" data-tab="exp">設定・匯出</button>
+    </nav>
+  </header>
+
+  <!-- 記錄 -->
+  <section id="sec-log" class="panel">
+    <div class="row">
+      <div class="field"><label class="label" for="f-start">開始時間</label><input type="datetime-local" id="f-start"></div>
+      <div class="field"><label class="label" for="f-end">結束時間（還在痛可先空著）</label><input type="datetime-local" id="f-end"></div>
+    </div>
+
+    <div class="field">
+      <div class="wx-head"><span class="label">當時天氣</span><span class="wx-status" id="wx-status"></span></div>
+      <div class="wx" id="wx-box"></div>
+      <div><button class="btn small" id="wx-refresh" type="button">重新抓取天氣</button></div>
+    </div>
+
+    <div class="field">
+      <span class="label">疼痛強度（0–10）</span>
+      <div class="scale" id="scale"></div>
+      <div class="scale-legend"><span>1 輕微</span><span>5 中等</span><span>10 劇烈</span></div>
+    </div>
+
+    <div class="field">
+      <span class="label">頭痛部位（點圖選取，可複選）</span>
+      <div class="heads">
+        <div class="head-card">
+          <svg viewBox="0 0 200 250" aria-label="正面">
+            <defs><clipPath id="clipF"><ellipse cx="100" cy="112" rx="68" ry="88"/></clipPath></defs>
+            <ellipse class="deco" cx="31" cy="118" rx="9" ry="18"/><ellipse class="deco" cx="169" cy="118" rx="9" ry="18"/>
+            <rect class="deco" x="78" y="190" width="44" height="52" rx="6"/>
+            <ellipse cx="100" cy="112" rx="68" ry="88" fill="var(--region)"/>
+            <g clip-path="url(#clipF)">
+              <rect class="rg" data-area="vertex" x="0" y="0" width="200" height="52"/>
+              <rect class="rg" data-area="temple_R" x="0" y="52" width="52" height="72"/>
+              <rect class="rg" data-area="temple_L" x="148" y="52" width="52" height="72"/>
+              <rect class="rg" data-area="forehead" x="52" y="52" width="96" height="44"/>
+              <rect class="rg" data-area="sinus" x="0" y="124" width="200" height="38"/>
+              <rect class="rg" data-area="jaw" x="0" y="162" width="200" height="50"/>
+              <ellipse class="rg" data-area="eye_R" cx="76" cy="110" rx="22" ry="14"/>
+              <ellipse class="rg" data-area="eye_L" cx="124" cy="110" rx="22" ry="14"/>
+            </g>
+            <ellipse class="outline" cx="100" cy="112" rx="68" ry="88"/>
+            <text class="side" x="10" y="240">右</text><text class="side" x="180" y="240">左</text>
+          </svg>
+          <span class="cap">正面（面對你）</span>
+        </div>
+        <div class="head-card">
+          <svg viewBox="0 0 200 250" aria-label="背面">
+            <defs><clipPath id="clipB"><ellipse cx="100" cy="112" rx="68" ry="88"/></clipPath></defs>
+            <ellipse class="deco" cx="31" cy="118" rx="9" ry="18"/><ellipse class="deco" cx="169" cy="118" rx="9" ry="18"/>
+            <rect class="rg" data-area="neck_L" x="78" y="186" width="22" height="58"/>
+            <rect class="rg" data-area="neck_R" x="100" y="186" width="22" height="58"/>
+            <g clip-path="url(#clipB)">
+              <rect class="rg" data-area="vertex" x="0" y="0" width="200" height="52"/>
+              <rect class="rg" data-area="occ_L" x="0" y="52" width="100" height="96"/>
+              <rect class="rg" data-area="occ_R" x="100" y="52" width="100" height="96"/>
+              <rect class="rg" data-area="occ_low" x="0" y="148" width="200" height="60"/>
+            </g>
+            <ellipse class="outline" cx="100" cy="112" rx="68" ry="88"/>
+            <text class="side" x="10" y="240">左</text><text class="side" x="180" y="240">右</text>
+          </svg>
+          <span class="cap">背面（後腦勺）</span>
+        </div>
+      </div>
+      <div class="hover-name" id="hover-name">左右以你自己的身體為準</div>
+      <div class="chips" id="area-tags"></div>
+    </div>
+
+    <div class="field">
+      <span class="label">疼痛感覺・伴隨症狀</span>
+      <div class="chips" id="symptoms"></div>
+    </div>
+
+    <div class="field">
+      <span class="label">用藥</span>
+      <div class="meds" id="meds"></div>
+      <div><button class="btn small" id="add-med" type="button">＋ 加一筆用藥</button></div>
+      <datalist id="med-names"></datalist>
+    </div>
+
+    <div class="row">
+      <div class="field"><label class="label" for="f-relief">吃藥後效果</label>
+        <select id="f-relief"><option value="">還不知道</option><option>完全緩解</option><option>部分緩解</option><option>沒有效</option><option>沒吃藥</option></select></div>
+      <div class="field"><label class="label" for="f-trigger">可能的誘因</label><input id="f-trigger" placeholder="例：睡不好、生理期、沒吃飯、看螢幕太久"></div>
+    </div>
+
+    <div class="field"><label class="label" for="f-note">備註</label><textarea id="f-note" placeholder="任何想記下來的事"></textarea></div>
+
+    <div class="actions">
+      <button class="btn primary" id="save" type="button">儲存這筆紀錄</button>
+      <button class="btn" id="reset" type="button">清空重填</button>
+      <span class="note" id="edit-hint"></span>
+    </div>
+  </section>
+
+  <!-- 歷史 -->
+  <section id="sec-hist" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="insight" id="insight"></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <!-- 設定・匯出 -->
+  <section id="sec-exp" class="panel" hidden>
+    <div class="field">
+      <h2>雲端同步（Google 試算表）</h2>
+      <div class="note" id="cloud-state">還沒連線。連上後每筆紀錄都會存到你的 Google 試算表，換手機、用電腦都看得到同一份。</div>
+      <div class="row">
+        <div class="field"><label class="label" for="c-url">Apps Script 網址（/exec 結尾）</label><input id="c-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false"></div>
+        <div class="field" style="flex:0 1 180px"><label class="label" for="c-key">同步密碼</label><input id="c-key" type="password" autocomplete="off"></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="c-connect" type="button">連線並同步</button>
+        <a class="btn" id="c-open" href="#" target="_blank" rel="noopener" hidden>打開試算表</a>
+        <button class="btn danger" id="c-off" type="button" hidden>中斷連線</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <h2>天氣地點</h2>
+      <label class="toggle" for="auto-loc"><input type="checkbox" id="auto-loc"> <span><strong>每次記錄自動用目前位置</strong><br><span class="note">出國、出差時打開，天氣會抓你當下所在地。定位失敗時改用下面的固定地點。</span></span></label>
+      <div class="note">固定地點：<strong id="loc-now"></strong></div>
+      <div class="row">
+        <div class="field"><label class="label" for="geo-q">搜尋地點</label><input id="geo-q" placeholder="輸入地名，例：板橋、信義區、台中"></div>
+      </div>
+      <div class="actions"><button class="btn small" id="geo-search" type="button">搜尋</button><button class="btn small" id="geo-me" type="button">用我現在的位置</button></div>
+      <div class="geo-results" id="geo-results"></div>
+    </div>
+
+    <div class="field">
+      <h2>匯出資料</h2>
+      <div class="note">Excel 檔可以直接用 Excel 或 Google 試算表開啟，回診時拿給醫生看很方便。</div>
+      <div class="actions">
+        <button class="btn" id="exp-csv" type="button">匯出 Excel（CSV）</button>
+        <button class="btn" id="exp-json" type="button">備份（JSON）</button>
+        <label class="btn" for="imp-json">從備份還原</label>
+        <input type="file" id="imp-json" accept=".json,application/json" hidden>
+      </div>
+      <div class="note" id="exp-info"></div>
+    </div>
+
+    <div class="field">
+      <h2>資料存在哪裡</h2>
+      <div class="note" id="where-note"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+const LS='headache-log-v1', LS_SET='headache-settings-v1';
+const AREAS={vertex:'頭頂',forehead:'前額',temple_L:'左太陽穴',temple_R:'右太陽穴',eye_L:'左眼周圍',eye_R:'右眼周圍',sinus:'鼻竇・臉頰',jaw:'下顎',occ_L:'左後腦',occ_R:'右後腦',occ_low:'後腦下緣',neck_L:'左頸部',neck_R:'右頸部'};
+const SYMPTOMS=['一跳一跳（搏動）','緊繃壓迫','刺痛','悶痛','噁心想吐','怕光','怕吵','頭暈','視覺預兆'];
+const COMMON_MEDS=['普拿疼','普拿疼加強錠','布洛芬（Ibuprofen）','那普洛先（Naproxen）','阿斯匹靈','舒馬普坦（Sumatriptan）'];
+const WMO={0:'晴朗',1:'大致晴朗',2:'多雲',3:'陰天',45:'有霧',48:'霧凇',51:'毛毛雨',53:'毛毛雨',55:'較強毛毛雨',56:'凍毛毛雨',57:'凍毛毛雨',61:'小雨',63:'中雨',65:'大雨',66:'凍雨',67:'凍雨',71:'小雪',73:'中雪',75:'大雪',77:'冰晶',80:'陣雨',81:'較強陣雨',82:'豪大陣雨',85:'陣雪',86:'強陣雪',95:'雷雨',96:'雷雨夾冰雹',99:'強雷雨夾冰雹'};
+
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const toInput=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=s=>{if(!s)return'';const d=new Date(s);return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const fmtFull=s=>{if(!s)return'';const d=new Date(s);return `${ymd(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const painColor=n=>n<=0?'var(--muted)':n<=3?'var(--p1)':n<=6?'var(--p2)':n<=8?'var(--p3)':'var(--p4)';
+function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('無法存到瀏覽器，請先匯出備份');return false}}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2200)}
+
+let entries=load(LS,[]);
+let settings=load(LS_SET,{locName:'新北市板橋區',lat:25.0143,lon:121.4673});
+let selAreas=new Set(), selSym=new Set(), intensity=0, curWeather=null, editingId=null;
+
+/* 雲端同步：先存本機，再排隊送到 Google 試算表 */
+const LS_CLOUD='headache-cloud-v1', LS_PEND='headache-pending-v1';
+let cloud=load(LS_CLOUD,{url:'',key:'',sheetUrl:'',last:''});
+let pending=load(LS_PEND,[]);
+let syncing=false;
+function setPill(state,text){const p=$('#sync-pill');p.dataset.state=state;$('#sync-text').textContent=text}
+function pillIdle(){
+  if(!cloud.url){setPill('','只存在這台裝置');return}
+  if(pending.length){setPill('err',`有 ${pending.length} 筆還沒同步`);return}
+  setPill('ok',cloud.last?`已同步 ${cloud.last}`:'已連線');
+}
+function enqueue(op){pending.push(op);store(LS_PEND,pending);pillIdle();syncNow()}
+async function apiGet(){
+  const r=await fetch(`${cloud.url}?action=list&key=${encodeURIComponent(cloud.key)}`);
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'同步失敗');return j;
+}
+async function apiPost(body){
+  const r=await fetch(cloud.url,{method:'POST',body:JSON.stringify({...body,key:cloud.key})});
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'同步失敗');return j;
+}
+function applyPending(list){
+  const map=new Map(list.map(e=>[e.id,e]));
+  pending.forEach(op=>{if(op.op==='save')map.set(op.entry.id,op.entry);else if(op.op==='bulk')op.entries.forEach(e=>map.set(e.id,e));else if(op.op==='del')map.delete(op.id)});
+  return [...map.values()].sort((a,b)=>b.start.localeCompare(a.start));
+}
+async function syncNow(){
+  if(!cloud.url||syncing)return;
+  if(!navigator.onLine){pillIdle();return}
+  syncing=true;setPill('busy','同步中…');
+  try{
+    while(pending.length){
+      const op=pending[0];
+      if(op.op==='save')await apiPost({action:'save',entry:op.entry});
+      else if(op.op==='bulk')await apiPost({action:'bulk',entries:op.entries});
+      else if(op.op==='del')await apiPost({action:'del',id:op.id});
+      pending.shift();store(LS_PEND,pending);
+    }
+    const j=await apiGet();
+    entries=applyPending(j.entries||[]);store(LS,entries);
+    const d=new Date();cloud.last=`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    if(j.sheetUrl)cloud.sheetUrl=j.sheetUrl;store(LS_CLOUD,cloud);
+    syncing=false;pillIdle();
+    if(!$('#sec-hist').hidden)renderHistory();
+    if(!$('#sec-exp').hidden)renderSettings();
+    refreshMedNames();
+    return true;
+  }catch(e){
+    syncing=false;
+    setPill('err',e.message==='Failed to fetch'||e instanceof TypeError?'連不上試算表，稍後自動重試':e.message);
+    return false;
+  }
+}
+window.addEventListener('online',syncNow);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncNow()});
+$('#sync-pill').onclick=()=>{if(cloud.url)syncNow();else showTab('exp')};
+
+/* 分頁 */
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function showTab(t){
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  $('#sec-log').hidden=t!=='log';$('#sec-hist').hidden=t!=='hist';$('#sec-exp').hidden=t!=='exp';
+  if(t==='hist')renderHistory();
+  if(t==='exp')renderSettings();
+}
+
+/* 強度 */
+const scale=$('#scale');
+for(let i=1;i<=10;i++){const b=document.createElement('button');b.type='button';b.textContent=i;b.dataset.v=i;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>{intensity=intensity===i?0:i;renderScale()});scale.appendChild(b)}
+function renderScale(){scale.querySelectorAll('button').forEach(b=>{const v=+b.dataset.v;const on=v===intensity;b.setAttribute('aria-pressed',on);b.style.background=on?painColor(v):''})}
+
+/* 部位 */
+document.querySelectorAll('.rg').forEach(el=>{
+  el.setAttribute('tabindex','0');el.setAttribute('role','button');el.setAttribute('aria-label',AREAS[el.dataset.area]);el.setAttribute('aria-pressed','false');
+  const tog=()=>{const a=el.dataset.area;selAreas.has(a)?selAreas.delete(a):selAreas.add(a);renderAreas()};
+  el.addEventListener('click',tog);
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}});
+  el.addEventListener('mouseenter',()=>$('#hover-name').textContent=AREAS[el.dataset.area]);
+  el.addEventListener('mouseleave',()=>$('#hover-name').textContent='左右以你自己的身體為準');
+});
+function renderAreas(){
+  document.querySelectorAll('.rg').forEach(el=>el.setAttribute('aria-pressed',selAreas.has(el.dataset.area)));
+  const box=$('#area-tags');box.innerHTML='';
+  if(!selAreas.size){box.innerHTML='<span class="note">還沒選部位</span>';return}
+  Object.keys(AREAS).filter(a=>selAreas.has(a)).forEach(a=>{const s=document.createElement('span');s.className='chip tag';s.innerHTML=`${AREAS[a]}<button type="button" aria-label="移除${AREAS[a]}">×</button>`;s.querySelector('button').onclick=()=>{selAreas.delete(a);renderAreas()};box.appendChild(s)});
+}
+
+/* 症狀 */
+const symBox=$('#symptoms');
+SYMPTOMS.forEach(s=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=s;b.setAttribute('aria-pressed','false');b.onclick=()=>{selSym.has(s)?selSym.delete(s):selSym.add(s);renderSym()};symBox.appendChild(b)});
+function renderSym(){symBox.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',selSym.has(b.textContent)))}
+
+/* 用藥 */
+function refreshMedNames(){
+  const used=[];entries.forEach(e=>(e.meds||[]).forEach(m=>m.name&&used.push(m.name)));
+  const all=[...new Set([...used,...COMMON_MEDS])];
+  $('#med-names').innerHTML=all.map(n=>`<option value="${esc(n)}">`).join('');
+}
+function addMedRow(m={}){
+  const row=document.createElement('div');row.className='med';
+  const t=m.time||toInput(new Date());
+  row.innerHTML=`<input type="datetime-local" class="m-time" aria-label="用藥時間" value="${esc(t)}">
+    <input class="m-name" list="med-names" aria-label="藥名" placeholder="藥名" value="${esc(m.name||'')}">
+    <input class="m-dose" aria-label="劑量" placeholder="劑量，例：1顆" value="${esc(m.dose||'')}">
+    <button class="btn small danger" type="button">刪除</button>`;
+  row.querySelector('button').onclick=()=>row.remove();
+  $('#meds').appendChild(row);
+}
+$('#add-med').onclick=()=>{addMedRow();const rows=$('#meds').querySelectorAll('.m-name');rows[rows.length-1].focus()};
+function readMeds(){return [...document.querySelectorAll('#meds .med')].map(r=>({time:r.querySelector('.m-time').value,name:r.querySelector('.m-name').value.trim(),dose:r.querySelector('.m-dose').value.trim()})).filter(m=>m.name)}
+
+/* 天氣 */
+/* 用世界標準時間對時：手機在哪個時區都對得上，出國也不會抓錯小時 */
+const utcYmd=d=>d.toISOString().slice(0,10);
+async function fetchWeather(dtStr,place){
+  place=place||{lat:settings.lat,lon:settings.lon,name:settings.locName};
+  const d=new Date(dtStr);if(isNaN(d))throw new Error('時間格式不對');
+  const now=new Date();const daysAgo=(now-d)/864e5;
+  if(daysAgo<-15)throw new Error('太久以後的時間抓不到天氣');
+  const prev=new Date(d.getTime()-864e5),next=new Date(d.getTime()+864e5);
+  const base=daysAgo>85?'https://archive-api.open-meteo.com/v1/archive':'https://api.open-meteo.com/v1/forecast';
+  const url=`${base}?latitude=${place.lat}&longitude=${place.lon}&hourly=temperature_2m,relative_humidity_2m,pressure_msl,weather_code,precipitation&timezone=GMT&start_date=${utcYmd(prev)}&end_date=${utcYmd(daysAgo>85?d:next)}`;
+  const r=await fetch(url);if(!r.ok)throw new Error('天氣服務沒有回應');
+  const j=await r.json();const h=j.hourly;if(!h)throw new Error('沒有這個時間的天氣資料');
+  const key=d.toISOString().slice(0,13)+':00';const i=h.time.indexOf(key);
+  if(i<0||h.temperature_2m[i]==null)throw new Error('這個時間的天氣資料還沒出來');
+  const p=h.pressure_msl[i],p24=i>=24?h.pressure_msl[i-24]:null;
+  return {temp:h.temperature_2m[i],hum:h.relative_humidity_2m[i],pressure:p,dp24:(p!=null&&p24!=null)?Math.round((p-p24)*10)/10:null,code:h.weather_code[i],desc:WMO[h.weather_code[i]]??'—',rain:h.precipitation[i],loc:place.name,lat:+(+place.lat).toFixed(3),lon:+(+place.lon).toFixed(3),hour:key};
+}
+
+/* 目前位置：GPS → 地名，10 分鐘內重複用，不用每次等定位 */
+let posCache=null;
+function locate(){
+  return new Promise((ok,no)=>{
+    if(!navigator.geolocation)return no(new Error('這個瀏覽器不支援定位'));
+    navigator.geolocation.getCurrentPosition(p=>ok(p.coords),e=>no(new Error(e.code===1?'沒有定位權限':'定位逾時')),{enableHighAccuracy:true,timeout:15000,maximumAge:120000});
+  });
+}
+async function currentPlace(force){
+  if(!force&&posCache&&Date.now()-posCache.t<6e5)return posCache.place;
+  const c=await locate();
+  const name=await placeName(c.latitude,c.longitude);
+  posCache={t:Date.now(),place:{lat:c.latitude,lon:c.longitude,name,acc:c.accuracy}};
+  return posCache.place;
+}
+function wxLine(w){if(!w)return'';const dp=w.dp24==null?'':`（24h ${w.dp24>0?'+':''}${w.dp24}）`;return `${w.desc} ${Math.round(w.temp)}°C・濕度 ${w.hum}%・氣壓 ${Math.round(w.pressure)} hPa${dp}`}
+function renderWeather(state,msg){
+  const box=$('#wx-box'),st=$('#wx-status');
+  if(state==='loading'){st.textContent='抓取中…';return}
+  if(state==='error'){st.textContent=msg;box.innerHTML='<div><b>—</b><span>暫時抓不到，可按下方重新抓取</span></div>';return}
+  const w=curWeather;if(!w){box.innerHTML='';st.textContent='';return}
+  st.textContent=`📍 ${w.loc}`;
+  const dpCls=w.dp24==null?'':w.dp24<=-3?'down':w.dp24>=3?'up':'';
+  box.innerHTML=`<div><b>${esc(w.desc)}</b><span>天氣</span></div>
+    <div><b>${Math.round(w.temp*10)/10}°C</b><span>氣溫</span></div>
+    <div><b>${w.hum}%</b><span>濕度</span></div>
+    <div><b>${Math.round(w.pressure*10)/10}</b><span>氣壓 hPa</span></div>
+    <div><b class="${dpCls}">${w.dp24==null?'—':(w.dp24>0?'+':'')+w.dp24}</b><span>24 小時氣壓變化</span></div>`;
+}
+let wxTimer,wxSeq=0;
+function queueWeather(){clearTimeout(wxTimer);wxTimer=setTimeout(getWeather,500)}
+async function getWeather(force){
+  const v=$('#f-start').value;if(!v)return;const seq=++wxSeq;
+  // 自動定位只用在「剛發生的頭痛」：補記很久以前的，現在的位置不一定是當時的位置
+  const recent=Math.abs(Date.now()-new Date(v))<12*36e5;
+  let place=null,note='';
+  if(settings.auto&&recent&&!editingId){
+    $('#wx-status').textContent='定位中…';
+    try{place=await currentPlace(force===true)}catch(e){note=`（${e.message}，改用固定地點）`}
+    if(seq!==wxSeq)return;
+  }
+  renderWeather('loading');
+  try{const w=await fetchWeather(v,place);if(seq!==wxSeq)return;curWeather=w;renderWeather('ok');if(note)$('#wx-status').textContent+=note}
+  catch(e){if(seq!==wxSeq)return;curWeather=null;renderWeather('error',e.message==='Failed to fetch'?'沒有網路，抓不到天氣':e.message)}
+}
+$('#f-start').addEventListener('change',queueWeather);
+$('#wx-refresh').onclick=()=>getWeather(true);
+
+/* 表單 */
+function resetForm(){
+  editingId=null;$('#f-start').value=toInput(new Date());$('#f-end').value='';
+  intensity=0;selAreas=new Set();selSym=new Set();$('#meds').innerHTML='';
+  $('#f-relief').value='';$('#f-trigger').value='';$('#f-note').value='';$('#edit-hint').textContent='';$('#save').textContent='儲存這筆紀錄';
+  renderScale();renderAreas();renderSym();refreshMedNames();getWeather();
+}
+function fillForm(e){
+  editingId=e.id;$('#f-start').value=e.start;$('#f-end').value=e.end||'';
+  intensity=e.intensity||0;selAreas=new Set(e.areas||[]);selSym=new Set(e.symptoms||[]);
+  $('#meds').innerHTML='';(e.meds||[]).forEach(addMedRow);
+  $('#f-relief').value=e.relief||'';$('#f-trigger').value=e.trigger||'';$('#f-note').value=e.note||'';
+  curWeather=e.weather||null;renderWeather(curWeather?'ok':'error','這筆沒有天氣資料');
+  $('#edit-hint').textContent=`正在編輯 ${fmt(e.start)} 的紀錄`;$('#save').textContent='更新紀錄';
+  renderScale();renderAreas();renderSym();refreshMedNames();showTab('log');window.scrollTo({top:0});
+}
+$('#reset').onclick=resetForm;
+$('#save').onclick=()=>{
+  const start=$('#f-start').value;if(!start){toast('請填開始時間');return}
+  const end=$('#f-end').value;if(end&&new Date(end)<new Date(start)){toast('結束時間早於開始時間');return}
+  const e={id:editingId||('h'+Date.now()),start,end,intensity,areas:[...selAreas],symptoms:[...selSym],meds:readMeds(),relief:$('#f-relief').value,trigger:$('#f-trigger').value.trim(),note:$('#f-note').value.trim(),weather:curWeather};
+  if(editingId)entries=entries.map(x=>x.id===editingId?e:x);else entries.push(e);
+  entries.sort((a,b)=>b.start.localeCompare(a.start));
+  if(store(LS,entries)){toast(editingId?'已更新':'已儲存');if(cloud.url)enqueue({op:'save',entry:e});resetForm();showTab('hist')}
+};
+
+/* 歷史 */
+function duration(e){if(!e.end)return null;return Math.round((new Date(e.end)-new Date(e.start))/60000)}
+function durText(m){if(m==null)return'';const h=Math.floor(m/60),mm=m%60;return h?`${h} 小時${mm?mm+' 分':''}`:`${mm} 分鐘`}
+function topOf(arr){const c={};arr.forEach(x=>c[x]=(c[x]||0)+1);const s=Object.entries(c).sort((a,b)=>b[1]-a[1]);return s[0]?s[0]:null}
+function renderHistory(){
+  const list=$('#list'),stats=$('#stats'),ins=$('#insight');
+  if(!entries.length){stats.innerHTML='';ins.textContent='';list.innerHTML=`<div class="empty"><h3>還沒有紀錄</h3>頭痛時到「記錄」填一筆，這裡會列出每次的強度、部位、用藥和當時天氣，並統計最近 30 天的狀況。<div style="margin-top:14px"><button class="btn" type="button" id="go-log">去記錄第一筆</button></div></div>`;$('#go-log').onclick=()=>showTab('log');return}
+  const since=Date.now()-30*864e5;const recent=entries.filter(e=>new Date(e.start)>=since);
+  const withI=recent.filter(e=>e.intensity>0);
+  const avg=withI.length?(withI.reduce((s,e)=>s+e.intensity,0)/withI.length).toFixed(1):'—';
+  const ta=topOf(recent.flatMap(e=>e.areas||[]));const tm=topOf(recent.flatMap(e=>(e.meds||[]).map(m=>m.name)));
+  const medDays=new Set(recent.flatMap(e=>(e.meds||[]).map(m=>(m.time||e.start).slice(0,10)))).size;
+  stats.innerHTML=`<div class="stat"><b>${recent.length} 次</b><span>近 30 天發作</span></div>
+    <div class="stat"><b>${avg}</b><span>平均強度</span></div>
+    <div class="stat"><b>${ta?AREAS[ta[0]]:'—'}</b><span>最常痛的部位${ta?`（${ta[1]} 次）`:''}</span></div>
+    <div class="stat"><b>${tm?esc(tm[0]):'—'}</b><span>最常用的藥${tm?`（${tm[1]} 次）`:''}</span></div>`;
+  const wxR=recent.filter(e=>e.weather&&e.weather.dp24!=null);const drop=wxR.filter(e=>e.weather.dp24<=-3).length;
+  let t=`近 30 天有 ${medDays} 天吃止痛藥。`;
+  if(wxR.length)t+=`有天氣資料的 ${wxR.length} 次裡，${drop} 次發作前 24 小時氣壓下降超過 3 hPa。`;
+  ins.textContent=t;
+  list.innerHTML='';
+  entries.forEach(e=>{
+    const d=duration(e);const el=document.createElement('article');el.className='entry';
+    const meds=(e.meds||[]).map(m=>`${fmt(m.time)} <strong>${esc(m.name)}</strong>${m.dose?' '+esc(m.dose):''}`).join('；');
+    el.innerHTML=`<div class="badge" style="background:${painColor(e.intensity)}">${e.intensity||'–'}</div>
+      <div class="when">${fmtFull(e.start)}${e.end?' → '+fmt(e.end):'（未填結束）'}${d!=null?`・${durText(d)}`:''}</div>
+      <div class="line">部位：<strong>${(e.areas||[]).map(a=>AREAS[a]).join('、')||'未選'}</strong>${e.symptoms&&e.symptoms.length?'・'+esc(e.symptoms.join('、')):''}</div>
+      <div class="line">用藥：${meds||'沒有'}${e.relief?`・效果：<strong>${esc(e.relief)}</strong>`:''}</div>
+      <div class="line">天氣：${e.weather?esc(wxLine(e.weather)):'沒有資料'}</div>
+      <div class="line">${e.trigger?'誘因：'+esc(e.trigger)+'　':''}${e.note?esc(e.note):''}</div>
+      <div class="ops" style="grid-column:2"><button class="btn small" type="button" data-act="edit">編輯</button><button class="btn small danger" type="button" data-act="del">刪除</button></div>`;
+    el.querySelector('[data-act=edit]').onclick=()=>fillForm(e);
+    const del=el.querySelector('[data-act=del]');
+    del.onclick=()=>{if(del.classList.contains('armed')){entries=entries.filter(x=>x.id!==e.id);store(LS,entries);if(cloud.url)enqueue({op:'del',id:e.id});toast('已刪除');renderHistory()}else{del.classList.add('armed');del.textContent='再按一次確定刪除';setTimeout(()=>{del.classList.remove('armed');del.textContent='刪除'},3000)}};
+    list.appendChild(el);
+  });
+}
+
+/* 設定 */
+function renderSettings(){
+  $('#loc-now').textContent=`${settings.locName}（${(+settings.lat).toFixed(3)}, ${(+settings.lon).toFixed(3)}）`;
+  $('#auto-loc').checked=!!settings.auto;
+  $('#exp-info').textContent=`目前共 ${entries.length} 筆紀錄`;
+  const on=!!cloud.url;
+  if(document.activeElement!==$('#c-url'))$('#c-url').value=cloud.url;
+  if(document.activeElement!==$('#c-key'))$('#c-key').value=cloud.key;
+  $('#c-off').hidden=!on;
+  $('#c-open').hidden=!cloud.sheetUrl;if(cloud.sheetUrl)$('#c-open').href=cloud.sheetUrl;
+  $('#c-connect').textContent=on?'立即同步':'連線並同步';
+  $('#cloud-state').textContent=on?(pending.length?`已連線，有 ${pending.length} 筆等網路恢復後送出。`:`已連線，最後同步：${cloud.last||'—'}。每筆紀錄都會存到你的 Google 試算表。`):'還沒連線。連上後每筆紀錄都會存到你的 Google 試算表，換手機、用電腦都看得到同一份。';
+  $('#where-note').textContent=on?'主要資料在你的 Google 試算表，這台裝置只留一份快取方便離線查看。沒網路時新增的紀錄會先存在手機，有網路時自動補送。':'目前紀錄只存在這台裝置的瀏覽器裡。清除瀏覽器資料會一併刪掉，建議連上 Google 試算表，或每個月按一次「備份」。';
+}
+$('#c-connect').onclick=async()=>{
+  const url=$('#c-url').value.trim(),key=$('#c-key').value;
+  if(!/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$/.test(url)){toast('網址要是 script.google.com 開頭、/exec 結尾');return}
+  if(!key){toast('請填同步密碼');return}
+  const first=cloud.url!==url;
+  cloud={...cloud,url,key};
+  if(first){cloud.sheetUrl='';cloud.last='';if(entries.length){pending.push({op:'bulk',entries:[...entries]});store(LS_PEND,pending)}}
+  store(LS_CLOUD,cloud);
+  const ok=await syncNow();
+  renderSettings();
+  toast(ok?'同步完成':'連線失敗，請檢查網址和密碼');
+};
+$('#c-off').onclick=()=>{
+  const b=$('#c-off');
+  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='再按一次確定中斷';setTimeout(()=>{b.classList.remove('armed');b.textContent='中斷連線'},3000);return}
+  cloud={url:'',key:'',sheetUrl:'',last:''};pending=[];store(LS_CLOUD,cloud);store(LS_PEND,pending);
+  b.classList.remove('armed');b.textContent='中斷連線';pillIdle();renderSettings();toast('已中斷，試算表裡的資料不會被刪除');
+};
+$('#auto-loc').onchange=ev=>{
+  settings.auto=ev.target.checked;store(LS_SET,settings);
+  toast(settings.auto?'已開啟，記錄時會自動抓目前位置的天氣':'已關閉，改用固定地點');
+  if(settings.auto)currentPlace(true).then(p=>toast(`目前位置：${p.name}`)).catch(e=>toast(`${e.message}，請在瀏覽器允許定位`));
+  if(!editingId)getWeather();
+};
+function setLoc(name,lat,lon){settings={...settings,locName:name,lat:+lat,lon:+lon};store(LS_SET,settings);renderSettings();$('#geo-results').innerHTML='';toast('地點已更新，之後的紀錄會用這裡的天氣');if(!editingId)getWeather()}
+function locChip(box,label,lat,lon,saveName){const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=label;b.onclick=()=>setLoc(saveName||label,lat,lon);box.appendChild(b)}
+/* 搜尋：先查街道・里・地標（OpenStreetMap，查得到「江子翠」這種地名），沒有再查大地名 */
+async function searchOSM(q){
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&accept-language=zh-TW&q=${encodeURIComponent(q)}`);
+  const j=await r.json();
+  return j.map(p=>{const a=p.address||{};const parts=[a.city||a.county||a.state,a.town||a.suburb||a.city_district,a.village||a.neighbourhood||a.quarter,p.name].filter((v,i,arr)=>v&&arr.indexOf(v)===i);return {name:parts.join(' ')||p.display_name,lat:+p.lat,lon:+p.lon,tw:a.country_code==='tw',country:a.country}});
+}
+async function searchMeteo(q){
+  const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=zh`);const j=await r.json();
+  return (j.results||[]).map(p=>({name:[p.admin1,p.admin2,p.name].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' '),lat:p.latitude,lon:p.longitude,tw:p.country_code==='TW',country:p.country}));
+}
+$('#geo-search').onclick=async()=>{
+  const q=$('#geo-q').value.trim();if(!q)return;const box=$('#geo-results');box.innerHTML='<span class="note">搜尋中…</span>';
+  let list=[];
+  try{list=await searchOSM(q)}catch(e){}
+  if(!list.length){try{list=await searchMeteo(q)}catch(e){}}
+  if(!list.length){box.innerHTML=navigator.onLine?'<span class="note">找不到，換個寫法試試（例：江子翠、板橋車站、文化路一段）</span>':'<span class="note">沒有網路，無法搜尋</span>';return}
+  list.sort((a,b)=>b.tw-a.tw);
+  box.innerHTML='';list.forEach(p=>locChip(box,p.name+(p.tw||!p.country?'':` (${p.country})`),p.lat,p.lon,p.name));
+};
+$('#geo-q').addEventListener('keydown',e=>{if(e.key==='Enter')$('#geo-search').click()});
+
+/* 定位：開高精度、不用舊的快取位置，抓到後先顯示地名和誤差讓你確認，不直接存 */
+function fetchT(url,ms=6000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t))}
+const uniq=a=>a.filter((v,i,arr)=>v&&arr.indexOf(v)===i);
+async function placeName(lat,lon){
+  // 1) BigDataCloud：專給網頁用的免費地名查詢，全世界都查得到
+  try{
+    const r=await fetchT(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh-Hant`);
+    if(r.ok){const j=await r.json();
+      const adm=((j.localityInfo||{}).administrative||[]).filter(x=>x.adminLevel>=4).sort((a,b)=>a.adminLevel-b.adminLevel).map(x=>x.name);
+      const tw=j.countryCode==='TW';
+      const parts=uniq(tw?[...adm.slice(0,2),j.locality]:[j.countryName,j.principalSubdivision,j.city||j.locality]);
+      if(parts.length)return parts.join(' ');
+    }
+  }catch(e){}
+  // 2) OpenStreetMap 備援
+  try{
+    const r=await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&accept-language=zh-TW&lat=${lat}&lon=${lon}`);
+    const a=(await r.json()).address||{};
+    const tw=a.country_code==='tw';
+    const parts=uniq([tw?'':a.country,a.city||a.county||a.state,a.town||a.suburb||a.city_district,a.village||a.neighbourhood||a.quarter]);
+    if(parts.length)return parts.join(' ');
+  }catch(e){}
+  return `座標 ${(+lat).toFixed(3)}, ${(+lon).toFixed(3)}`;
+}
+$('#geo-me').onclick=()=>{
+  if(!navigator.geolocation){toast('這個瀏覽器不支援定位');return}
+  const box=$('#geo-results');box.innerHTML='<span class="note">定位中…（最多 15 秒）</span>';
+  navigator.geolocation.getCurrentPosition(async p=>{
+    const {latitude:lat,longitude:lon,accuracy:acc}=p.coords;
+    const name=await placeName(lat,lon);
+    const err=acc>=1000?`約 ${(acc/1000).toFixed(acc>=10000?0:1)} 公里`:`約 ${Math.round(acc)} 公尺`;
+    box.innerHTML='';
+    const msg=document.createElement('div');msg.className='note';msg.style.flexBasis='100%';
+    msg.innerHTML=acc>3000
+      ?`定位到「${esc(name)}」，但誤差${err}，<strong>不太準</strong>。電腦沒有 GPS，只能用網路推估；建議用上面的搜尋直接打地名，或用手機定位。`
+      :`定位到「${esc(name)}」，誤差${err}。是這裡的話按下面確認。`;
+    box.appendChild(msg);
+    locChip(box,`使用「${name}」`,lat,lon,name);
+  },e=>{
+    box.innerHTML=`<span class="note">${e.code===1?'瀏覽器沒有給定位權限（網址列左邊的圖示可以開），或改用搜尋':'定位逾時或失敗，請改用搜尋'}</span>`;
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+};
+
+/* 匯出・匯入 */
+function download(name,text,type){const blob=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+const csvCell=v=>{const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+$('#exp-csv').onclick=()=>{
+  if(!entries.length){toast('還沒有資料可以匯出');return}
+  const head=['開始時間','結束時間','持續(分鐘)','強度(0-10)','部位','症狀','用藥時間','藥名','劑量','用藥次數','止痛效果','誘因','天氣','氣溫(°C)','濕度(%)','氣壓(hPa)','24h氣壓變化(hPa)','雨量(mm)','地點','備註'];
+  const rows=[...entries].sort((a,b)=>a.start.localeCompare(b.start)).map(e=>{const m=e.meds||[],w=e.weather||{};return[
+    fmtFull(e.start),fmtFull(e.end),duration(e)??'',e.intensity||'',(e.areas||[]).map(a=>AREAS[a]).join('、'),(e.symptoms||[]).join('、'),
+    m.map(x=>fmtFull(x.time)).join('；'),m.map(x=>x.name).join('；'),m.map(x=>x.dose).join('；'),m.length,e.relief,e.trigger,
+    w.desc??'',w.temp??'',w.hum??'',w.pressure??'',w.dp24??'',w.rain??'',w.loc??'',e.note]});
+  const csv='﻿'+[head,...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+  download(`頭痛日誌_${ymd(new Date())}.csv`,csv,'text/csv;charset=utf-8');toast('已匯出');
+};
+$('#exp-json').onclick=()=>{download(`頭痛日誌備份_${ymd(new Date())}.json`,JSON.stringify({version:1,settings,entries},null,2),'application/json');toast('已下載備份')};
+$('#imp-json').onchange=async ev=>{
+  const f=ev.target.files[0];if(!f)return;
+  try{const j=JSON.parse(await f.text());const list=Array.isArray(j)?j:j.entries;if(!Array.isArray(list))throw 0;
+    const valid=list.filter(e=>e&&e.id&&e.start);
+    const map=new Map(entries.map(e=>[e.id,e]));valid.forEach(e=>map.set(e.id,e));
+    entries=[...map.values()].sort((a,b)=>b.start.localeCompare(a.start));store(LS,entries);
+    if(cloud.url&&valid.length)enqueue({op:'bulk',entries:valid});
+    renderSettings();toast(`已還原，共 ${entries.length} 筆`);
+  }catch(e){toast('這個檔案不是頭痛日誌的備份')}
+  ev.target.value='';
+};
+
+resetForm();
+renderSettings();
+pillIdle();
+syncNow();
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+})();
+</script>
+</body>
+</html>
